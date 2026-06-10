@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2026 FIFA World Cup — Live Scores & Schedule</title>
+  <meta name="description" content="2026 FIFA World Cup live scores, match schedule, group standings, and top scorers. Real-time data updated automatically." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════
+       Header
+  ══════════════════════════════════════════ -->
+  <header class="site-header">
+    <div class="header-bg"></div>
+    <div class="header-content">
+      <div class="header-left">
+        <div class="trophy-icon">🏆</div>
+        <div class="header-titles">
+          <h1 class="site-title">FIFA WORLD CUP 2026™</h1>
+          <p class="site-subtitle">USA · CANADA · MEXICO &nbsp;|&nbsp; Live Scores & Data</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="live-badge" id="liveBadge">
+          <span class="live-dot"></span>
+          <span class="live-text">LIVE</span>
+          <span class="live-count" id="liveCount">0</span>
+        </div>
+        <div class="last-update" id="lastUpdate">Loading...</div>
+      </div>
+    </div>
+    <!-- Tab Navigation -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="overview" id="tabOverview">🏟️ Overview</button>
+      <button class="tab-btn" data-tab="matches" id="tabMatches">📅 Schedule</button>
+      <button class="tab-btn" data-tab="standings" id="tabStandings">📊 Standings</button>
+      <button class="tab-btn" data-tab="scorers" id="tabScorers">⚽ Top Scorers</button>
+    </nav>
+  </header>
+
+  <!-- ══════════════════════════════════════════
+       Main Content
+  ══════════════════════════════════════════ -->
+  <main class="site-main">
+
+    <!-- Particle background -->
+    <div class="particles" id="particles"></div>
+
+    <!-- ── Overview Panel ──────────────────────── -->
+    <section class="tab-panel active" id="panelOverview">
+      <div class="overview-grid">
+
+        <!-- Left: Standings summary -->
+        <aside class="panel-card" id="standingsCard">
+          <div class="card-header">
+            <span class="card-icon">📊</span>
+            <h2 class="card-title">Group Standings</h2>
+          </div>
+          <div class="standings-list" id="standingsMini">
+            <div class="skeleton-list">
+              <div class="skeleton-row"></div>
+              <div class="skeleton-row"></div>
+              <div class="skeleton-row"></div>
+              <div class="skeleton-row"></div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Center: Live / recent matches -->
+        <section class="panel-main">
+          <!-- Live Now -->
+          <div class="section-label">🔴 Live Now</div>
+          <div class="live-matches-container" id="liveMatchesContainer">
+            <div class="empty-state" id="liveEmpty">
+              <span class="empty-icon">📡</span>
+              <p>No matches in progress right now</p>
+            </div>
+          </div>
+
+          <!-- Recent / Upcoming -->
+          <div class="section-label" style="margin-top:2rem;">📅 Recent & Upcoming</div>
+          <div class="matches-scroll" id="recentMatchesContainer">
+            <div class="skeleton-cards">
+              <div class="skeleton-match-card"></div>
+              <div class="skeleton-match-card"></div>
+              <div class="skeleton-match-card"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right: Top scorers summary -->
+        <aside class="panel-card" id="scorersCard">
+          <div class="card-header">
+            <span class="card-icon">⚽</span>
+            <h2 class="card-title">Top Scorers</h2>
+          </div>
+          <div class="scorers-list" id="scorersMini">
+            <div class="skeleton-list">
+              <div class="skeleton-row"></div>
+              <div class="skeleton-row"></div>
+              <div class="skeleton-row"></div>
+              <div class="skeleton-row"></div>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </section>
+
+    <!-- ── Full Schedule Panel ──────────────────── -->
+    <section class="tab-panel" id="panelMatches">
+      <div class="panel-card full-width">
+        <div class="card-header">
+          <span class="card-icon">📅</span>
+          <h2 class="card-title">Full Schedule</h2>
+          <div class="filter-group" id="matchFilterGroup">
+            <button class="filter-btn active" data-status="all">All</button>
+            <button class="filter-btn" data-status="SCHEDULED">Scheduled</button>
+            <button class="filter-btn" data-status="LIVE">Live</button>
+            <button class="filter-btn" data-status="FINISHED">Finished</button>
+          </div>
+        </div>
+        <div class="matches-full-list" id="matchesFullList">
+          <div class="loading-spinner"><div class="spinner"></div><p>Loading schedule...</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Standings Panel ──────────────────────── -->
+    <section class="tab-panel" id="panelStandings">
+      <div class="panel-card full-width">
+        <div class="card-header">
+          <span class="card-icon">📊</span>
+          <h2 class="card-title">Full Standings</h2>
+        </div>
+        <div class="standings-full" id="standingsFull">
+          <div class="loading-spinner"><div class="spinner"></div><p>Loading standings...</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Top Scorers Panel ────────────────────── -->
+    <section class="tab-panel" id="panelScorers">
+      <div class="panel-card full-width">
+        <div class="card-header">
+          <span class="card-icon">⚽</span>
+          <h2 class="card-title">Top Scorers</h2>
+          <div class="stat-toggle-group" id="scorerStatToggle">
+            <button class="stat-toggle-btn active" data-sort="goals">⚽ Goals</button>
+            <button class="stat-toggle-btn" data-sort="assists">🎯 Assists</button>
+          </div>
+        </div>
+        <div class="scorers-full" id="scorersFull">
+          <div class="loading-spinner"><div class="spinner"></div><p>Loading top scorers...</p></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ══════════════════════════════════════════
+       Footer
+  ══════════════════════════════════════════ -->
+  <footer class="site-footer">
+    <p>Data provided by <a href="https://www.football-data.org/" target="_blank" rel="noopener">football-data.org</a> &nbsp;·&nbsp; Auto-refreshes every 30 seconds &nbsp;·&nbsp; All times shown in your local timezone &nbsp;·&nbsp; 2026 FIFA World Cup™</p>
+  </footer>
+
+  <script src="/static/js/main.js"></script>
+</body>
+</html>
