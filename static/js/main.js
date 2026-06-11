@@ -475,37 +475,79 @@ function renderScorersMini(scorersData) {
     </div>`).join("");
 }
 
-          <div class="scorer-full-name">${s.player?.name || "-"}</div>
-          <div class="scorer-full-meta">${s.team?.shortName || s.team?.name || ""}${nat}</div>
-        </div>
-        <div class="scorer-stats">
-          <div class="scorer-stat-item ${sort==="goals" ? "highlight" : ""}">
-            <span class="scorer-stat-val">${s.goals ?? 0} ${penNote}</span>
-            <span class="scorer-stat-lbl">Goals</span>
-          </div>
-          <div class="scorer-stat-item ${sort==="assists" ? "highlight" : ""}">
-            <span class="scorer-stat-val">${s.assists ?? 0}</span>
-            <span class="scorer-stat-lbl">Assists</span>
-          </div>
-          <div class="scorer-stat-item">
-            <span class="scorer-stat-val">${(s.goals??0)+(s.assists??0)}</span>
-            <span class="scorer-stat-lbl">G+A</span>
-          </div>
-        </div>
-      </div>`;
-  }).join("");
+// ── RENDER: Dual independent leaderboards ─────────────────────
+
+/**
+ * Build one leaderboard row.
+ * primaryStat: 'goals' | 'assists'
+ */
+function renderLeaderboardRow(s, rank, primaryStat, primaryIcon) {
+  const val    = s[primaryStat] ?? 0;
+  const secStat = primaryStat === "goals" ? "assists" : "goals";
+  const secVal  = s[secStat] ?? 0;
+  const secLbl  = primaryStat === "goals" ? "Assists" : "Goals";
+  const nat     = s.player?.nationality ? ` · ${s.player.nationality}` : "";
+  const penNote = (primaryStat === "goals" && s.penalties)
+    ? `<span class="penalty-note">(${s.penalties} pen)</span>` : "";
+
+  return `
+    <div class="lb-row">
+      <div class="lb-rank ${RANK_COLORS[rank] || ""}">${rank + 1}</div>
+      <div class="lb-crest">${teamCrest(s.team, 30)}</div>
+      <div class="lb-info">
+        <div class="lb-name">${s.player?.name || "-"}</div>
+        <div class="lb-meta">${s.team?.shortName || s.team?.name || ""}${nat}</div>
+      </div>
+      <div class="lb-primary">
+        <span class="lb-primary-val">${val}</span>
+        <span class="lb-primary-icon">${primaryIcon}</span>
+        ${penNote}
+      </div>
+      <div class="lb-secondary">
+        <span class="lb-sec-val">${secVal}</span>
+        <span class="lb-sec-lbl">${secLbl}</span>
+      </div>
+    </div>`;
 }
 
-// Scorer sort toggle
-document.querySelectorAll("#scorerStatToggle .stat-toggle-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll("#scorerStatToggle .stat-toggle-btn")
-      .forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    currentScoreSort = btn.dataset.sort;
-    if (allScorersData) renderScorersFull(allScorersData, currentScoreSort);
-  });
-});
+function renderGoalScorers(scorersData) {
+  const container = $("goalScorersList");
+  if (!container) return;
+  if (!scorersData?.scorers?.length) {
+    container.innerHTML = `<div class="empty-state"><span class="empty-icon">⚽</span><p>No goals scored yet</p></div>`;
+    return;
+  }
+  const sorted = [...scorersData.scorers]
+    .filter(s => (s.goals ?? 0) > 0)
+    .sort((a,b) => (b.goals ?? 0) - (a.goals ?? 0));
+  if (!sorted.length) {
+    container.innerHTML = `<div class="empty-state"><span class="empty-icon">⚽</span><p>No goals scored yet</p></div>`;
+    return;
+  }
+  container.innerHTML = `<div class="lb-list">${
+    sorted.map((s, i) => renderLeaderboardRow(s, i, "goals", "⚽")).join("")
+  }</div>`;
+}
+
+function renderAssistLeaders(scorersData) {
+  const container = $("assistLeadersList");
+  if (!container) return;
+  if (!scorersData?.scorers?.length) {
+    container.innerHTML = `<div class="empty-state"><span class="empty-icon">🎯</span><p>No assists recorded yet</p></div>`;
+    return;
+  }
+  const sorted = [...scorersData.scorers]
+    .filter(s => (s.assists ?? 0) > 0)
+    .sort((a,b) => (b.assists ?? 0) - (a.assists ?? 0));
+  if (!sorted.length) {
+    container.innerHTML = `<div class="empty-state"><span class="empty-icon">🎯</span><p>No assists recorded yet</p></div>`;
+    return;
+  }
+  container.innerHTML = `<div class="lb-list">${
+    sorted.map((s, i) => renderLeaderboardRow(s, i, "assists", "🎯")).join("")
+  }</div>`;
+}
+
 
 // ── Main refresh ──────────────────────────────────────────────
 
