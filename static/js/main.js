@@ -94,6 +94,26 @@ function fmtStage(stage) {
   return map[stage] || stage || "";
 }
 
+/**
+ * Free-tier workaround: API keeps status=TIMED during live matches.
+ * Infer "likely live" from kickoff time (90 min + 40 min buffer).
+ */
+function isLikelyLive(match) {
+  if (["IN_PLAY","PAUSED","LIVE"].includes(match.status)) return true;
+  if (match.status === "FINISHED") return false;
+  const now  = Date.now();
+  const start = new Date(match.utcDate).getTime();
+  return now >= start && now <= start + 130 * 60 * 1000;
+}
+
+/** True if the API has returned an actual score (free tier: only after FT) */
+function hasScore(match) {
+  const ft = match.score?.fullTime;
+  const ht = match.score?.halfTime;
+  return (ft?.home !== null && ft?.away !== null) ||
+         (ht?.home !== null && ht?.away !== null);
+}
+
 /** Render a coloured status badge */
 function statusBadge(match) {
   const s = match.status;
@@ -102,6 +122,9 @@ function statusBadge(match) {
     return `<span class="match-time-badge live">⏱ ${min ? min + "'" : "LIVE"}</span>`;
   }
   if (s === "FINISHED") return `<span class="match-time-badge done">Full Time</span>`;
+  // Free-tier: infer live from time
+  if (isLikelyLive(match))
+    return `<span class="match-time-badge live">⚡ LIVE</span>`;
   if (["TIMED","SCHEDULED"].includes(s))
     return `<span class="match-time-badge soon">${fmtTime(match.utcDate)}</span>`;
   return `<span class="match-time-badge done">${s}</span>`;
@@ -165,7 +188,8 @@ async function fetchJSON(url) {
 // ── RENDER: Live matches ───────────────────────────────────────
 
 function renderLiveMatches(matches) {
-  const live = matches.filter(m => ["IN_PLAY","PAUSED","LIVE"].includes(m.status));
+  // Use time-based inference so free-tier delayed status still shows live matches
+  const live = matches.filter(isLikelyLive);
   const container = $("liveMatchesContainer");
   const liveCount = $("liveCount");
   if (liveCount) liveCount.textContent = live.length;
@@ -180,11 +204,18 @@ function renderLiveMatches(matches) {
     return;
   }
 
+  // True API live vs time-inferred
+  const apiLive = ["IN_PLAY","PAUSED","LIVE"];
   container.innerHTML = live.map(m => {
-    const home  = m.homeTeam?.shortName || m.homeTeam?.name || "Home";
-    const away  = m.awayTeam?.shortName || m.awayTeam?.name || "Away";
-    const score = scoreDisplay(m);
-    const min   = m.minute || "";
+    const home    = m.homeTeam?.shortName || m.homeTeam?.name || "Home";
+    const away    = m.awayTeam?.shortName || m.awayTeam?.name || "Away";
+    const score   = scoreDisplay(m);
+    const min     = m.minute || "";
+    const isReal  = apiLive.includes(m.status);
+    const timeLabel = isReal ? (min ? min + "'" : "In Progress") : "In Progress";
+    const delayed = !isReal
+      ? `<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px">⚡ Scores update after FT (free tier)</div>`
+      : "";
     return `
       <div class="live-match-card">
         <div class="live-match-header">
@@ -197,8 +228,9 @@ function renderLiveMatches(matches) {
             <div class="team-name">${home}</div>
           </div>
           <div class="score-center">
-            <div class="score-numbers">${score}</div>
-            <div class="match-time">${min ? min + "'" : "In Progress"}</div>
+            <div class="score-numbers">${hasScore(m) ? score : "? : ?"}</div>
+            <div class="match-time">${timeLabel}</div>
+            ${delayed}
           </div>
           <div class="team-block">
             <div class="team-crest-lg">${teamCrest(m.awayTeam, 48)}</div>
@@ -217,12 +249,17 @@ function renderRecentMatches(matches) {
     .sort((a,b) => new Date(b.utcDate) - new Date(a.utcDate))
     .slice(0, 5)
     .reverse();
+  // Time-inferred live matches (free tier: status stays TIMED during game)
+  const liveNow = matches.filter(m =>
+    isLikelyLive(m) && m.status !== "FINISHED"
+  );
   const upcoming = [...matches]
-    .filter(m => ["SCHEDULED","TIMED"].includes(m.status))
+    .filter(m => ["SCHEDULED","TIMED"].includes(m.status) && !isLikelyLive(m))
     .sort((a,b) => new Date(a.utcDate) - new Date(b.utcDate))
     .slice(0, 5);
 
-  const combined = [...finished, ...upcoming];
+  // Order: live first, then recent finished, then upcoming
+  const combined = [...liveNow, ...finished, ...upcoming];
   const container = $("recentMatchesContainer");
   if (!container) return;
 
@@ -234,14 +271,15 @@ function renderRecentMatches(matches) {
 }
 
 function renderMatchCard(m) {
-  const home      = m.homeTeam?.shortName || m.homeTeam?.name || "Home";
-  const away      = m.awayTeam?.shortName || m.awayTeam?.name || "Away";
-  const isLive    = ["IN_PLAY","PAUSED"].includes(m.status);
+  const home       = m.homeTeam?.shortName || m.homeTeam?.name || "Home";
+  const away       = m.awayTeam?.shortName || m.awayTeam?.name || "Away";
+  const live       = isLikelyLive(m) && m.status !== "FINISHED";
   const isFinished = m.status === "FINISHED";
-  const showScore = isFinished || isLive;
+  // Show score if: truly finished, live with score, or API returned score
+  const showScore  = isFinished || hasScore(m);
 
   return `
-    <div class="match-card ${isLive?"is-live":""} ${isFinished?"is-finished":""}">
+    <div class="match-card ${live?"is-live":""} ${isFinished?"is-finished":""}">
       <div class="team-cell">
         ${teamCrest(m.homeTeam, 26)}
         <span class="name">${home}</span>
@@ -249,7 +287,9 @@ function renderMatchCard(m) {
       <div class="match-center">
         ${showScore
           ? `<div class="score-box">${scoreDisplay(m)}</div>`
-          : `<div class="score-box vs">VS</div>`}
+          : live
+            ? `<div class="score-box vs" style="font-size:0.8rem">? : ?</div>`
+            : `<div class="score-box vs">VS</div>`}
         ${statusBadge(m)}
         <div class="match-date-small">${fmtDate(m.utcDate)}</div>
       </div>
@@ -271,7 +311,7 @@ function renderFullMatches(matches) {
   const filtered = currentFilter === "all"
     ? matches
     : matches.filter(m => currentFilter === "LIVE"
-        ? ["IN_PLAY","PAUSED"].includes(m.status)
+        ? isLikelyLive(m)          // free-tier: use time inference for LIVE filter
         : m.status === currentFilter);
 
   const sorted = [...filtered].sort((a,b) => new Date(a.utcDate) - new Date(b.utcDate));
