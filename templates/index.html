@@ -146,20 +146,33 @@
 
     <!-- ── Top Scorers Panel ────────────────────── -->
     <section class="tab-panel" id="panelScorers">
-      <div class="panel-card full-width">
-        <div class="card-header">
-          <span class="card-icon">⚽</span>
-          <h2 class="card-title">Top Scorers</h2>
-          <div class="stat-toggle-group" id="scorerStatToggle">
-            <button class="stat-toggle-btn active" data-sort="goals">⚽ Goals</button>
-            <button class="stat-toggle-btn" data-sort="assists">🎯 Assists</button>
+      <div class="scorers-dual-grid">
+
+        <!-- ⚽ Goal Scorers -->
+        <div class="panel-card">
+          <div class="card-header">
+            <span class="card-icon">⚽</span>
+            <h2 class="card-title">Top Goal Scorers</h2>
+          </div>
+          <div class="scorers-leaderboard" id="goalScorersList">
+            <div class="loading-spinner"><div class="spinner"></div><p>Loading...</p></div>
           </div>
         </div>
-        <div class="scorers-full" id="scorersFull">
-          <div class="loading-spinner"><div class="spinner"></div><p>Loading top scorers...</p></div>
+
+        <!-- 🎯 Assist Leaders -->
+        <div class="panel-card">
+          <div class="card-header">
+            <span class="card-icon">🎯</span>
+            <h2 class="card-title">Top Assist Leaders</h2>
+          </div>
+          <div class="scorers-leaderboard" id="assistLeadersList">
+            <div class="loading-spinner"><div class="spinner"></div><p>Loading...</p></div>
+          </div>
         </div>
+
       </div>
     </section>
+
 
   </main>
 

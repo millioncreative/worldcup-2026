@@ -428,7 +428,6 @@ function renderStandingsFull(standings) {
               <span class="stat">GF</span>
               <span class="stat">GA</span>
               <span class="stat">GD</span>
-              <span class="pts">Pts</span>
               <span class="stat form-header">Form</span>
             </div>
             ${group.table.map((r, i) => `
@@ -476,33 +475,6 @@ function renderScorersMini(scorersData) {
     </div>`).join("");
 }
 
-// ── RENDER: Full scorers / assists ────────────────────────────
-
-let currentScoreSort = "goals";
-
-function renderScorersFull(scorersData, sort = "goals") {
-  const container = $("scorersFull");
-  if (!container) return;
-
-  if (!scorersData?.scorers?.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <span class="empty-icon">⚽</span>
-        <p>Data will appear once matches begin on June 11, 2026</p>
-      </div>`;
-    return;
-  }
-
-  const sorted = [...scorersData.scorers].sort((a,b) => (b[sort] ?? 0) - (a[sort] ?? 0));
-
-  container.innerHTML = sorted.map((s, i) => {
-    const penNote = s.penalties ? `<span class="penalty-note">(${s.penalties} pen)</span>` : "";
-    const nat     = s.player?.nationality ? ` · ${s.player.nationality}` : "";
-    return `
-      <div class="scorer-full-card">
-        <div class="scorer-full-rank ${RANK_COLORS[i]||""}">${i+1}</div>
-        <div class="scorer-crest">${teamCrest(s.team, 34)}</div>
-        <div class="scorer-full-info">
           <div class="scorer-full-name">${s.player?.name || "-"}</div>
           <div class="scorer-full-meta">${s.team?.shortName || s.team?.name || ""}${nat}</div>
         </div>
@@ -563,11 +535,12 @@ async function refreshAll() {
     renderStandingsFull(standingsData);
   }
 
-  // Scorers
+  // Scorers — render both independent leaderboards
   if (scorersData) {
     allScorersData = scorersData;
     renderScorersMini(scorersData);
-    renderScorersFull(scorersData, currentScoreSort);
+    renderGoalScorers(scorersData);
+    renderAssistLeaders(scorersData);
   }
 }
 
